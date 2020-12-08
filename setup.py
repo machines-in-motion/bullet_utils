@@ -53,7 +53,7 @@ setup(
     data_files=data_files_to_install,
     package_data={package_name: resources},
     scripts=scripts_list,
-    install_requires=["setuptools", "importlib_resources"],
+    install_requires=["setuptools", "pybullet", "importlib_resources"],
     zip_safe=True,
     maintainer="mnaveau",
     maintainer_email="mnaveau@tuebingen.mpg.de",

@@ -1,4 +1,4 @@
-pybullet_utils
+bullet_utils
 ----------------
 
 ### What it is
@@ -13,7 +13,7 @@ The code provided in this repo simplifies the interaction between pinocchio and 
 
 ### Copyrights
 
-Copyright(c) 2018-2019 Max Planck Gesellschaft, New York University
+Copyright(c) 2018-2021 Max Planck Gesellschaft, New York University
 
 ### License
 
