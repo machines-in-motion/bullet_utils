@@ -2,7 +2,6 @@
 .DS_Store
 
 # plots
-*.png
 *.eps
 
 # mujoco 
