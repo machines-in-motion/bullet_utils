@@ -54,8 +54,7 @@ if __name__ == "__main__":
         robot.send_joint_command(tau)
 
         # Step the simulator and sleep.
-        pybullet.stepSimulation()
-        time.sleep(0.001)
+        env.step(sleep=True)
 
     # Print the final active force frames and the forces
     force_frames, forces = robot.get_force()
