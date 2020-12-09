@@ -15,7 +15,7 @@ except ImportError:
 import pybullet
 import pinocchio
 import numpy as np
-from time import sleep
+import time
 from pinocchio.utils import zero
 
 
