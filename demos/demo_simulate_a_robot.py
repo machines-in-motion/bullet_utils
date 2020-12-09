@@ -18,92 +18,14 @@ import time
 import pybullet
 import pinocchio
 
-from bullet_utils.wrapper import PinBulletWrapper
-
-class RobotSimulator(PinBulletWrapper):
-    def __init__(self, physics_client=None):
-
-        # Get the pointer tower a physics client.
-        if physics_client is None:
-            self.physics_client = PinBulletWrapper.initialize_physics_client()
-        else:
-            self.physics_client = physics_client
-
-        # Load the ground.
-        # may raise PackageNotFoundError
-        self.ground_urdf = path.join(
-            get_package_share_directory("pinocchio_bullet"),
-            "urdf",
-            "ground.urdf",
-        )
-        self.ground_id = pybullet.loadURDF(self.ground_urdf)
-
-        # Load the robot
-        self.start_pose = [0.0, 0.0, 0.4]
-        self.start_orientation = pybullet.getQuaternionFromEuler([0, 0, 0])
-        self.robot_urdf = path.join(
-            get_package_share_directory("pinocchio_bullet"),
-            "urdf",
-            "solo12.urdf",
-        )
-        self.robot_meshes_path = path.dirname(
-            get_package_share_directory("pinocchio_bullet"))
-        assert path.exists(self.robot_urdf)
-        assert path.exists(self.robot_meshes_path)
-        print("robot_urdf: ", self.robot_urdf)
-        print("robot_meshes_path: ", self.robot_meshes_path)
-        self.robot_id = pybullet.loadURDF(
-            self.robot_urdf,
-            self.start_pose,
-            self.start_orientation,
-            flags=pybullet.URDF_USE_INERTIA_FROM_FILE,
-            useFixedBase=False,
-        )
-
-        # Create the robot wrapper in pinocchio.
-        self.pinocchio_robot = pinocchio.robot_wrapper.RobotWrapper.BuildFromURDF(
-            self.robot_urdf,
-            package_dirs=[self.robot_meshes_path, "."],
-            root_joint=pinocchio.JointModelFreeFlyer(),
-            verbose=True
-        )
-
-        # Query all the joints.
-        self.num_joints = pybullet.getNumJoints(self.robot_id)
-
-        for ji in range(self.num_joints):
-            pybullet.changeDynamics(
-                self.robot_id,
-                ji,
-                linearDamping=0.04,
-                angularDamping=0.04,
-                restitution=0.0,
-                lateralFriction=0.5,
-            )
-
-        self.base_link_name = "base_link"
-        controlled_joints = []
-        for leg in ["FL", "FR", "HL", "HR"]:
-            controlled_joints += [leg + "_HAA", leg + "_HFE", leg + "_KFE"]
-        self.joint_names = controlled_joints
-
-        # Creates the wrapper by calling the super.__init__.
-        super(RobotSimulator, self).__init__(
-            self.robot_id,
-            self.pinocchio_robot,
-            controlled_joints,
-            ["FL_ANKLE", "FR_ANKLE", "HL_ANKLE", "HR_ANKLE"],
-        )
-
+from bullet_utils.env import BulletEnvWithGround
+from robot_properties_solo.solo8wrapper import Solo8Robot
+import importlib.resources
 
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
-
-    # Setup pybullet for the quadruped and a wrapper to pinocchio.
-    robot = RobotSimulator()
-
-    # Get the current state and modify the joints to have the legs
-    # bend inwards.
+    env = BulletEnvWithGround(pybullet.GUI)
+    robot = env.add_robot(Solo8Robot)
     q, dq = robot.get_state()
 
     # Update the simulation state to the new initial configuration.
