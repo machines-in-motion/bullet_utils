@@ -9,14 +9,14 @@ The code provided in this repo simplifies the interaction between pinocchio and 
 
 If you already have Pinocchio, the installation is simple:
 ```
-git clone git@github.com:huaijiangzhu/bullet_utils.git
+git clone git@github.com:machines-in-motion/bullet_utils.git
 cd bullet_utils
 pip3 install .
 ```
 
 To run the demo, you need to install robot_properties_solo
 ```
-git clone git@github.com:huaijiangzhu/robot_properties_solo.git
+git clone git@github.com:open-dynamic-robot-initiative/robot_properties_solo.git
 cd robot_properties_solo
 pip3 install .
 ```
