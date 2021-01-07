@@ -29,24 +29,38 @@ class BulletEnv(object):
         pybullet.setGravity(0, 0, -9.81)
         pybullet.setPhysicsEngineParameter(fixedTimeStep=dt, numSubSteps=1)
         
-    def add_robot(self, RobotWrapper, pos=None, orn=None):
-        robot = RobotWrapper(pos, orn)
+    def add_robot(self, RobotWrapper, pos=None, orn=None, useFixedBase=False):
+        robot = RobotWrapper(pos, orn, useFixedBase)
         self.robots.append(robot)
         return robot
         
     def add_object_from_urdf(self, urdf_path, 
                              pos=[0,0,0], orn=[0,0,0,1],
                              useFixedBase=True):
-        # Load the plane
+        # Load the object.
         object_id = pybullet.loadURDF(urdf_path, useFixedBase=useFixedBase)
         pybullet.resetBasePositionAndOrientation(object_id, pos, orn)
         self.objects.append(object_id)
         return object_id
+
+    def start_recording(self, file_name):
+        self.file_name = file_name
+        pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name)
+
+    def stop_recording(self):
+        pybullet.stopStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name)
    
     def step(self, sleep=True):
         if sleep:
             time.sleep(self.dt)
         pybullet.stepSimulation()
+
+    def print_physics_engine_params(self):
+        params = pybullet.getPhysicsEngineParameters(self.physicsClient)
+        print("physics_engine_params:")
+        for key in params:
+            print("    - ", key, ": ", params[key])
+
 
 class BulletEnvWithGround(BulletEnv):
     def __init__(self, server=pybullet.GUI, dt=0.001):

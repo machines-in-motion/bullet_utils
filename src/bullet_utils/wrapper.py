@@ -75,15 +75,6 @@ class PinBulletWrapper(object):
             pinocchio_robot.model.getFrameId(name) for name in endeff_names
         ]
 
-    @staticmethod
-    def initialize_physics_client(
-        dt=0.001, numSubSteps=1, gravity=[0, 0, -9.81], with_gui=True
-    ):
-        physicsClient = pybullet.connect(pybullet.GUI)
-        pybullet.setGravity(gravity[0], gravity[1], gravity[2])
-        pybullet.setPhysicsEngineParameter(fixedTimeStep=dt, numSubSteps=1)
-        return physicsClient
-
     def get_force(self):
         """ Returns the force readings as well as the set of active contacts """
         active_contacts_frame_ids = []
@@ -242,6 +233,37 @@ class PinBulletWrapper(object):
     def step_simulation(self):
         """ Step the simulation forward. """
         pybullet.stepSimulation()
+
+    def print_physics_params(self):
+        # Query all the joints.
+        num_joints = pybullet.getNumJoints(self.robot_id)
+
+        for ji in range(num_joints):
+            (
+                mass,
+                lateral_friction,
+                local_inertia_diag,
+                local_inertia_pos,
+                local_inertia_ori,
+                resitution,
+                rolling_friction,
+                spinning_friction,
+                contact_damping,
+                contact_stiffness,
+            ) = pybullet.getDynamicsInfo(bodyUniqueId=self.robot_id, linkIndex=ji)
+            # for el in dynamics_info:
+            #     print(el)
+            print("link ", ji)
+            print("    - mass : ", mass)
+            print("    - lateral_friction : ", lateral_friction)
+            print("    - local_inertia_diag : ", local_inertia_diag)
+            print("    - local_inertia_pos : ", local_inertia_pos)
+            print("    - local_inertia_ori : ", local_inertia_ori)
+            print("    - resitution : ", resitution)
+            print("    - rolling_friction : ", rolling_friction)
+            print("    - spinning_friction : ", spinning_friction)
+            print("    - contact_damping : ", contact_damping)
+            print("    - contact_stiffness : ", contact_stiffness)
 
     def _action(self, pos, rot):
         res = np.zeros((6, 6))
