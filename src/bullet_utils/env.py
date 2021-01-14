@@ -30,7 +30,10 @@ class BulletEnv(object):
         pybullet.setPhysicsEngineParameter(fixedTimeStep=dt, numSubSteps=1)
         
     def add_robot(self, RobotWrapper, pos=None, orn=None, useFixedBase=False):
-        robot = RobotWrapper(pos, orn, useFixedBase)
+        try:
+            robot = RobotWrapper(pos, orn, useFixedBase)
+        except:
+            robot = RobotWrapper(pos, orn)
         self.robots.append(robot)
         return robot
         

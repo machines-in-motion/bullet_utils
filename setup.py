@@ -4,9 +4,11 @@ import sys
 from os import path, walk
 from setuptools import setup, find_packages
 
+
 def print_error(*args, **kwargs):
     """ Print in stderr. """
     print(*args, file=sys.stderr, **kwargs)
+
 
 def find_resources(package_name):
     """ Find the relative path of files under the resource folder. """
@@ -16,28 +18,26 @@ def find_resources(package_name):
 
     for (root, _, files) in walk(resources_dir):
         for afile in files:
-            if (afile != package_name and 
-                not afile.endswith(".DS_Store") and
-                not afile.endswith(".py")):
+            if (
+                afile != package_name
+                and not afile.endswith(".DS_Store")
+                and not afile.endswith(".py")
+            ):
                 rel_dir = path.relpath(root, package_dir)
                 src = path.join(rel_dir, afile)
                 resources.append(src)
     return resources
 
+
 # provide old names for compatiblity
 package_name = "bullet_utils"
-package_names = [package_name, 
-                "pinocchio_bullet", 
-                "py_pinocchio_bullet"]
+package_names = [package_name, "pinocchio_bullet", "py_pinocchio_bullet"]
 
 with open(path.join(path.dirname(path.realpath(__file__)), "readme.md"), "r") as fh:
     long_description = fh.read()
 
 # Find the resource files.
 resources = find_resources(package_name)
-
-# Install the package.xml.
-data_files_to_install = [(path.join("share", package_name), ["package.xml"])]
 
 # Install nodes and demos.
 scripts_list = []
@@ -48,12 +48,11 @@ for (root, _, files) in walk(path.join("demos")):
 setup(
     name=package_name,
     version="1.0.0",
-    package_dir={name:path.join("src", name) for name in package_names},
+    package_dir={name: path.join("src", name) for name in package_names},
     packages=package_names,
-    data_files=data_files_to_install,
     package_data={package_name: resources},
     scripts=scripts_list,
-    install_requires=["setuptools", "pybullet", "importlib_resources"],
+    install_requires=["setuptools", "pybullet", "pinocchio", "importlib_resources"],
     zip_safe=True,
     maintainer="mnaveau",
     maintainer_email="mnaveau@tuebingen.mpg.de",
