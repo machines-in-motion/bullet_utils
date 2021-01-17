@@ -33,6 +33,11 @@ class PinBulletWrapper(object):
         self.joint_names = joint_names
         self.endeff_names = endeff_names
 
+        self.base_linvel_prev = None
+        self.base_angvel_prev = None
+        self.base_linacc = np.zeros((3, 1))
+        self.base_angacc = np.zeros((3, 1))
+        
         bullet_joint_map = {}
         for ji in range(pybullet.getNumJoints(robot_id)):
             bullet_joint_map[
@@ -122,6 +127,14 @@ class PinBulletWrapper(object):
         """
         vel, orn = pybullet.getBaseVelocity(self.robot_id)
         return np.array(vel + orn).reshape(6, 1)
+
+    def get_base_acceleration_world(self):
+        """Returns the numerically-computed acceleration of the base in the world frame.
+
+        Returns:
+            np.array((6,1)) vector of linear and angular acceleration
+        """
+        return np.concatenate((self.base_linacc, self.base_angacc))
 
     def get_state(self):
         # Returns a pinocchio like representation of the q, dq matrixes
@@ -234,6 +247,17 @@ class PinBulletWrapper(object):
         """ Step the simulation forward. """
         pybullet.stepSimulation()
 
+    def compute_numerical_quantities(self, dt):
+        """ Compute numerical robot quantities from simulation results. """
+        # Compute base acceleration numerically
+        linvel, angvel = pybullet.getBaseVelocity(self.robot_id)
+        if self.base_linvel_prev is not None and self.base_angvel_prev is not None:
+            self.base_linacc = (1.0 / dt) * (np.array(linvel) - self.base_linvel_prev)
+            self.base_angacc = (1.0 / dt) * (np.array(angvel) - self.base_angvel_prev)
+    
+        self.base_linvel_prev = linvel
+        self.base_angvel_prev = angvel
+            
     def print_physics_params(self):
         # Query all the joints.
         num_joints = pybullet.getNumJoints(self.robot_id)
