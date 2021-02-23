@@ -39,6 +39,10 @@ class PinBulletWrapper(object):
         self.base_linacc = np.zeros(3)
         self.base_angacc = np.zeros(3)
 
+        # IMU pose offset in base frame
+        self.rot_base_to_imu = np.identity(3)
+        self.r_base_to_imu = np.array([0.116, 0.0, 0.017])
+        
         self.rng = default_rng()
 
         self.base_imu_accel_bias = np.zeros(3)
@@ -158,7 +162,7 @@ class PinBulletWrapper(object):
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
         
         rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
-        return rot_base_to_world.T.dot(np.array(base_angvel)) + self.base_imu_gyro_bias + self.base_imu_gyro_thermal
+        return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(np.array(base_angvel))) + self.base_imu_gyro_bias + self.base_imu_gyro_thermal
         
     def get_base_imu_linacc(self):
         """ Returns simulated base IMU accelerometer acceleration.
@@ -167,9 +171,14 @@ class PinBulletWrapper(object):
             np.array((3,1)) IMU accelerometer acceleration (base frame, gravity offset)
         """
         base_pos, base_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
-    
         rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
-        return rot_base_to_world.T.dot(self.base_linacc + np.array([0.0, 0.0, 9.81])) + self.base_imu_accel_bias + self.base_imu_accel_thermal
+
+        base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
+        
+        # Transform the base acceleration to the IMU position, in world frame
+        imu_linacc = self.base_linacc + np.cross(self.base_angacc, self.r_base_to_imu) + np.cross(base_angvel, np.cross(base_angvel, self.r_base_to_imu))
+
+        return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(imu_linacc + np.array([0.0, 0.0, 9.81]))) + self.base_imu_accel_bias + self.base_imu_accel_thermal
         
     def get_state(self):
         # Returns a pinocchio like representation of the q, dq matrixes
