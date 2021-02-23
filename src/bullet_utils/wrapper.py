@@ -11,6 +11,7 @@ All rights reserved.
 import pybullet
 import pinocchio
 import numpy as np
+from numpy.random import default_rng
 from time import sleep
 from pinocchio.utils import zero
 
@@ -33,6 +34,26 @@ class PinBulletWrapper(object):
         self.joint_names = joint_names
         self.endeff_names = endeff_names
 
+        self.base_linvel_prev = None
+        self.base_angvel_prev = None
+        self.base_linacc = np.zeros(3)
+        self.base_angacc = np.zeros(3)
+
+        # IMU pose offset in base frame
+        self.rot_base_to_imu = np.identity(3)
+        self.r_base_to_imu = np.array([0.116, 0.0, 0.017])
+        
+        self.rng = default_rng()
+
+        self.base_imu_accel_bias = np.zeros(3)
+        self.base_imu_gyro_bias = np.zeros(3)
+        self.base_imu_accel_thermal = np.zeros(3)
+        self.base_imu_gyro_thermal = np.zeros(3)
+        self.base_imu_accel_thermal_noise = 0.00078 # m/s^2/sqrt(Hz)
+        self.base_imu_gyro_thermal_noise = 0.000523 # rad/s/sqrt(Hz) 
+        self.base_imu_accel_bias_noise = 0.0001 # m/s^3/sqrt(Hz)
+        self.base_imu_gyro_bias_noise = 0.000618 # rad/s^2/sqrt(Hz)
+        
         bullet_joint_map = {}
         for ji in range(pybullet.getNumJoints(robot_id)):
             bullet_joint_map[
@@ -123,6 +144,42 @@ class PinBulletWrapper(object):
         vel, orn = pybullet.getBaseVelocity(self.robot_id)
         return np.array(vel + orn).reshape(6, 1)
 
+    def get_base_acceleration_world(self):
+        """Returns the numerically-computed acceleration of the base in the world frame.
+
+        Returns:
+            np.array((6,1)) vector of linear and angular acceleration
+        """
+        return np.concatenate((self.base_linacc, self.base_angacc))
+
+    def get_base_imu_angvel(self):
+        """ Returns simulated base IMU gyroscope angular velocity.
+
+        Returns:
+            np.array((3,1)) IMU gyroscope angular velocity (base frame)
+        """
+        base_pos, base_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+        base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
+        
+        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
+        return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(np.array(base_angvel))) + self.base_imu_gyro_bias + self.base_imu_gyro_thermal
+        
+    def get_base_imu_linacc(self):
+        """ Returns simulated base IMU accelerometer acceleration.
+
+        Returns:
+            np.array((3,1)) IMU accelerometer acceleration (base frame, gravity offset)
+        """
+        base_pos, base_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
+
+        base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
+        
+        # Transform the base acceleration to the IMU position, in world frame
+        imu_linacc = self.base_linacc + np.cross(self.base_angacc, self.r_base_to_imu) + np.cross(base_angvel, np.cross(base_angvel, self.r_base_to_imu))
+
+        return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(imu_linacc + np.array([0.0, 0.0, 9.81]))) + self.base_imu_accel_bias + self.base_imu_accel_thermal
+        
     def get_state(self):
         # Returns a pinocchio like representation of the q, dq matrixes
         q = zero(self.nq)
@@ -234,6 +291,25 @@ class PinBulletWrapper(object):
         """ Step the simulation forward. """
         pybullet.stepSimulation()
 
+    def compute_numerical_quantities(self, dt):
+        """ Compute numerical robot quantities from simulation results. """
+        # Compute base acceleration numerically
+        linvel, angvel = pybullet.getBaseVelocity(self.robot_id)
+        if self.base_linvel_prev is not None and self.base_angvel_prev is not None:
+            self.base_linacc = (1.0 / dt) * (np.array(linvel) - self.base_linvel_prev)
+            self.base_angacc = (1.0 / dt) * (np.array(angvel) - self.base_angvel_prev)
+    
+        self.base_linvel_prev = np.array(linvel)
+        self.base_angvel_prev = np.array(angvel)
+
+        # Integrate IMU accelerometer/gyroscope bias terms forward.
+        self.base_imu_accel_bias += dt * (self.base_imu_accel_bias_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
+        self.base_imu_gyro_bias += dt * (self.base_imu_gyro_bias_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
+
+        # Add simulated IMU sensor thermal noise.
+        self.base_imu_accel_thermal = (self.base_imu_accel_thermal_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
+        self.base_imu_gyro_thermal = (self.base_imu_gyro_thermal_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
+        
     def print_physics_params(self):
         # Query all the joints.
         num_joints = pybullet.getNumJoints(self.robot_id)

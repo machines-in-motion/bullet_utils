@@ -58,6 +58,9 @@ class BulletEnv(object):
             time.sleep(self.dt)
         pybullet.stepSimulation()
 
+        for robot in self.robots:
+            robot.compute_numerical_quantities(self.dt)
+            
     def print_physics_engine_params(self):
         params = pybullet.getPhysicsEngineParameters(self.physicsClient)
         print("physics_engine_params:")
