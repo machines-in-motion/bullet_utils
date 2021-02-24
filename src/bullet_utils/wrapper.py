@@ -41,7 +41,7 @@ class PinBulletWrapper(object):
 
         # IMU pose offset in base frame
         self.rot_base_to_imu = np.identity(3)
-        self.r_base_to_imu = np.array([0.116, 0.0, 0.017])
+        self.r_base_to_imu = np.array([0.10407, -0.00635, 0.01540])
         
         self.rng = default_rng()
 
