@@ -28,7 +28,7 @@ class BulletEnv(object):
         self.physics_client = pybullet.connect(server)
         pybullet.setGravity(0, 0, -9.81)
         pybullet.setPhysicsEngineParameter(fixedTimeStep=dt, numSubSteps=1)
-        
+
     def add_robot(self, RobotWrapper, pos=None, orn=None, useFixedBase=False):
         try:
             robot = RobotWrapper(pos, orn, useFixedBase)
@@ -36,23 +36,28 @@ class BulletEnv(object):
             robot = RobotWrapper(pos, orn)
         self.robots.append(robot)
         return robot
-        
-    def add_object_from_urdf(self, urdf_path, 
-                             pos=[0,0,0], orn=[0,0,0,1],
-                             useFixedBase=True):
+
+    def add_object_from_urdf(
+        self, urdf_path, pos=[0, 0, 0], orn=[0, 0, 0, 1], useFixedBase=True
+    ):
         # Load the object.
         object_id = pybullet.loadURDF(urdf_path, useFixedBase=useFixedBase)
         pybullet.resetBasePositionAndOrientation(object_id, pos, orn)
         self.objects.append(object_id)
         return object_id
 
-    def start_recording(self, file_name):
+    def start_video_recording(self, file_name):
         self.file_name = file_name
-        pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name)
+        pybullet.startStateLogging(
+            pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name
+        )
 
-    def stop_recording(self):
-        pybullet.stopStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name)
-   
+    def stop_video_recording(self):
+        if hasattr(self, "file_name"):
+            pybullet.stopStateLogging(
+                pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name
+            )
+
     def step(self, sleep=True):
         if sleep:
             time.sleep(self.dt)
@@ -60,7 +65,7 @@ class BulletEnv(object):
 
         for robot in self.robots:
             robot.compute_numerical_quantities(self.dt)
-            
+
     def print_physics_engine_params(self):
         params = pybullet.getPhysicsEngineParameters(self.physicsClient)
         print("physics_engine_params:")
@@ -73,5 +78,7 @@ class BulletEnvWithGround(BulletEnv):
         super().__init__(server, dt)
         with importlib_resources.path(__package__, "env.py") as p:
             package_dir = p.parent.absolute()
-        plane_urdf = str(package_dir/"resources"/"plane_with_restitution.urdf")
+        plane_urdf = str(
+            package_dir / "resources" / "plane_with_restitution.urdf"
+        )
         self.add_object_from_urdf(plane_urdf)
