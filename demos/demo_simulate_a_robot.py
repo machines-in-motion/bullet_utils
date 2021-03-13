@@ -20,7 +20,11 @@ import pinocchio
 
 from bullet_utils.env import BulletEnvWithGround
 from robot_properties_solo.solo8wrapper import Solo8Robot
-import importlib.resources
+try:
+    # use standard Python importlib if available (Python>3.7)
+    import importlib.resources as importlib_resources
+except ImportError:
+    import importlib_resources
 
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
