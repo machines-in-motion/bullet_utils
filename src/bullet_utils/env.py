@@ -13,10 +13,8 @@ try:
 except ImportError:
     import importlib_resources
 import pybullet
-import pinocchio
-import numpy as np
 import time
-from pinocchio.utils import zero
+import inspect
 
 
 class BulletEnv(object):
@@ -30,12 +28,20 @@ class BulletEnv(object):
         pybullet.setPhysicsEngineParameter(fixedTimeStep=dt, numSubSteps=1)
 
     def add_robot(self, RobotWrapper, pos=None, orn=None, useFixedBase=False):
-        try:
-            robot = RobotWrapper(pos, orn, useFixedBase)
-        except:
+        wrapper_args = inspect.signature(
+            RobotWrapper.__init__
+        ).parameters.keys()
+        if "useFixedBase" in wrapper_args:
+            robot = RobotWrapper(pos, orn, useFixedBase=useFixedBase)
+        elif "use_fixed_base" in wrapper_args:
+            robot = RobotWrapper(pos, orn, use_fixed_base=useFixedBase)
+        else:
             robot = RobotWrapper(pos, orn)
         self.robots.append(robot)
         return robot
+
+    def add_robot_to_step(self, robot_wrapper_object):
+        self.robots.append(robot_wrapper_object)
 
     def add_object_from_urdf(
         self, urdf_path, pos=[0, 0, 0], orn=[0, 0, 0, 1], useFixedBase=True
