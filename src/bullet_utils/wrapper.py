@@ -158,7 +158,13 @@ class PinBulletWrapper(object):
         Returns:
             np.array((3,1)) IMU gyroscope angular velocity (base frame)
         """
-        base_pos, base_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+
+        # Get transform between inertial frame and link frame in base
+        base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
+        base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
+        base_pos, base_quat = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
+
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
         
         rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
@@ -170,7 +176,12 @@ class PinBulletWrapper(object):
         Returns:
             np.array((3,1)) IMU accelerometer acceleration (base frame, gravity offset)
         """
-        base_pos, base_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+
+        # Get transform between inertial frame and link frame in base
+        base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
+        base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
+        base_pos, base_quat = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
         rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
 
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
@@ -186,7 +197,12 @@ class PinBulletWrapper(object):
         dq = zero(self.nv)
 
         if not self.useFixedBase:
-            pos, orn = pybullet.getBasePositionAndOrientation(self.robot_id)
+            base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+            # Get transform between inertial frame and link frame in base
+            base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
+            base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
+            pos, orn = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
+
             q[:3] = pos
             q[3:7] = orn
 
@@ -243,8 +259,11 @@ class PinBulletWrapper(object):
         vec2list = lambda m: np.array(m.T).reshape(-1).tolist()
 
         if not self.useFixedBase:
+            # Get transform between inertial frame and link frame in base
+            base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
+            base_pos, base_quat = pybullet.multiplyTransforms(vec2list(q[:3]), vec2list(q[3:7]), base_stat[3], base_stat[4])
             pybullet.resetBasePositionAndOrientation(
-                self.robot_id, vec2list(q[:3]), vec2list(q[3:7])
+                self.robot_id, base_pos, base_quat
             )
 
             # Pybullet assumes the base velocity to be aligned with the world frame.
