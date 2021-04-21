@@ -11,9 +11,9 @@ You need [PyBullet](https://github.com/bulletphysics/bullet3) and [Pinocchio](ht
 
 #### Download the package
 
-To install this package, you can
+To download this package, you can
 
-1. use `git`  
+1. use `git clone`  
     ```
     mkdir -p ~/devel/workspace/src
     cd ~/devel/workspace/src
@@ -32,13 +32,13 @@ To install this package, you can
 #### Build the package
 
 You can install this package with 
-- pure pip,  
+- pure pip  
     ```
     cd mkdir -p ~/devel/workspace/src/bullet_utils
     pip3 install .
     ```
 
-or [colcon](https://github.com/machines-in-motion/machines-in-motion.github.io/wiki/use_colcon)  
+- or [colcon](https://github.com/machines-in-motion/machines-in-motion.github.io/wiki/use_colcon)  
     ```
     cd mkdir -p ~/devel/workspace
     colcon build
