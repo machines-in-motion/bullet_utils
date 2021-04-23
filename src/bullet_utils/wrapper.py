@@ -17,11 +17,33 @@ from pinocchio.utils import zero
 
 
 class PinBulletWrapper(object):
-    """"""
+    """[summary]
+
+    Attributes:
+        nq (int): Dimension of the generalized coordiantes.
+        nv (int): Dimension of the generalized velocities.
+        nj (int): Number of joints.
+        nf (int): Number of end-effectors.
+        robot_id (int): PyBullet id of the robot.
+        pinocchio_robot (:obj:'Pinocchio.RobotWrapper'): Pinocchio RobotWrapper for the robot.
+        useFixedBase (bool): Determines if the robot base if fixed.
+        nb_dof (int): The degrees of freedom excluding the base.
+        joint_names (:obj:`list` of :obj:`str`): Names of the joints.
+        endeff_names (:obj:`list` of :obj:`str`): Names of the end-effectors.
+    """    
 
     def __init__(
         self, robot_id, pinocchio_robot, joint_names, endeff_names, useFixedBase=False
     ):
+        """Initializes the wrapper.
+
+        Args:
+            robot_id (int): PyBullet id of the robot.
+            pinocchio_robot (:obj:'Pinocchio.RobotWrapper'): Pinocchio RobotWrapper for the robot.
+            joint_names (:obj:`list` of :obj:`str`): Names of the joints.
+            endeff_names (:obj:`list` of :obj:`str`): Names of the end-effectors.
+            useFixedBase (bool, optional): Determines if the robot base if fixed.. Defaults to False.
+        """    
         self.nq = pinocchio_robot.nq
         self.nv = pinocchio_robot.nv
         self.nj = len(joint_names)
@@ -97,7 +119,13 @@ class PinBulletWrapper(object):
         ]
 
     def get_force(self):
-        """ Returns the force readings as well as the set of active contacts """
+        """Returns the force readings as well as the set of active contacts
+
+        Returns:
+            (:obj:`list` of :obj:`int`): List of active contact frame ids.
+            (:obj:`list` of np.array((6,1))) List of active contact forces.
+        """        
+        
         active_contacts_frame_ids = []
         contact_forces = []
 
@@ -192,7 +220,13 @@ class PinBulletWrapper(object):
         return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(imu_linacc + np.array([0.0, 0.0, 9.81]))) + self.base_imu_accel_bias + self.base_imu_accel_thermal
         
     def get_state(self):
-        # Returns a pinocchio like representation of the q, dq matrixes
+        """Returns a pinocchio-like representation of the q, dq matrices. Note that the base velocities are expressed in the base frame.
+
+        Returns:
+            ndarray: Generalized positions.
+            ndarray: Generalized velocities.
+        """        
+        
         q = zero(self.nq)
         dq = zero(self.nv)
 
@@ -238,7 +272,7 @@ class PinBulletWrapper(object):
         - centroidal momentum
 
         Args:
-          q: Pinocchio generalized position vect.
+          q: Pinocchio generalized position vector.
           dq: Pinocchio generalize velocity vector.
         """
         self.pinocchio_robot.computeJointJacobians(q)
@@ -256,6 +290,12 @@ class PinBulletWrapper(object):
         return q, dq
 
     def reset_state(self, q, dq):
+        """Reset the robot to the desired states.
+
+        Args:
+            q (ndarray): Desired generalized positions.
+            dq (ndarray): Desired generalized velocities.
+        """        
         vec2list = lambda m: np.array(m.T).reshape(-1).tolist()
 
         if not self.useFixedBase:
@@ -289,6 +329,11 @@ class PinBulletWrapper(object):
                 )
 
     def send_joint_command(self, tau):
+        """Apply the desired torques to the joints.
+
+        Args:
+            tau (ndarray): Torque to be applied.
+        """        
         # TODO: Apply the torques on the base towards the simulator as well.
         if not self.useFixedBase:
             assert tau.shape[0] == self.nv - 6
@@ -311,7 +356,12 @@ class PinBulletWrapper(object):
         pybullet.stepSimulation()
 
     def compute_numerical_quantities(self, dt):
-        """ Compute numerical robot quantities from simulation results. """
+        """Compute numerical robot quantities from simulation results.
+
+        Args:
+            dt (float): Length of the time step.
+        """        
+        
         # Compute base acceleration numerically
         linvel, angvel = pybullet.getBaseVelocity(self.robot_id)
         if self.base_linvel_prev is not None and self.base_angvel_prev is not None:
@@ -330,6 +380,8 @@ class PinBulletWrapper(object):
         self.base_imu_gyro_thermal = (self.base_imu_gyro_thermal_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
         
     def print_physics_params(self):
+        """Print physics engine parameters.
+        """        
         # Query all the joints.
         num_joints = pybullet.getNumJoints(self.robot_id)
 
@@ -361,6 +413,15 @@ class PinBulletWrapper(object):
             print("    - contact_stiffness : ", contact_stiffness)
 
     def _action(self, pos, rot):
+        """Generate the adjoint from translation and rotation.
+
+        Args:
+            pos (np.array(3, )): Translation vector.
+            rot (np.array(3, 3)): Rotation matrix.
+
+        Returns:
+            np.array(3, 3): The adjoint of the given translation and rotation.
+        """        
         res = np.zeros((6, 6))
         res[:3, :3] = rot
         res[3:, 3:] = rot
