@@ -54,12 +54,6 @@ cd mkdir -p ~/devel/workspace/src/bullet_utils/demos
 python3 demo_simulate_a_robot.py
 ```
 
-### Authors
-
-- Julian Viereck
-- Maximilien Naveau
-- Huaijiang Zhu
-
 ### License and Copyrights
 
 License BSD-3-Clause

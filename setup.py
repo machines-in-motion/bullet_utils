@@ -2,8 +2,39 @@
 
 import sys
 from os import path, walk
+from shutil import copytree, rmtree
+from pathlib import Path
+from distutils.core import setup
+from distutils.command.build_py import build_py
 from setuptools import setup, find_packages
+from setuptools.command.install import install
+from setuptools.command.develop import develop
+from setuptools.command.egg_info import egg_info
 
+class custom_build_py(build_py):
+    def run(self):
+
+        # Try to build the doc and install it.
+        try:
+            # Get the mpi_cmake_module build doc method
+            from mpi_cmake_modules.documentation_builder import (
+                build_documentation,
+            )
+
+            build_documentation(
+                str(
+                    (
+                        Path(self.build_lib) / package_name / "doc"
+                    ).absolute()
+                ),
+                str(Path(__file__).parent.absolute()),
+                package_version,
+            )
+        except ImportError as e:
+            print(e)
+
+        # distutils uses old-style classes, so no super()
+        build_py.run(self)
 
 def print_error(*args, **kwargs):
     """ Print in stderr. """
@@ -32,6 +63,7 @@ def find_resources(package_name):
 # provide old names for compatiblity
 package_name = "bullet_utils"
 package_names = [package_name, "pinocchio_bullet", "py_pinocchio_bullet"]
+package_version = "1.0.0"
 
 with open(path.join(path.dirname(path.realpath(__file__)), "readme.md"), "r") as fh:
     long_description = fh.read()
@@ -71,4 +103,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
+    cmdclass={"build_py": custom_build_py},
 )
