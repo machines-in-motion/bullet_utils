@@ -2,15 +2,22 @@
 
 import sys
 from os import path, walk
-from shutil import copytree, rmtree
 from pathlib import Path
-from distutils.core import setup
-from distutils.command.build_py import build_py
-from setuptools.command.install import install
-from setuptools.command.develop import develop
-from setuptools.command.egg_info import egg_info
+from setuptools import setup, find_packages
+from setuptools.command.build_py import build_py
+
+
+package_name = "bullet_utils"
+package_version = "1.0.0"
+
 
 class custom_build_py(build_py):
+    """Build the documentation prior to the package.
+
+    Args:
+        build_py (class): inherit from the build_py class which builds the current
+                     python package.
+    """
     def run(self):
 
         # Try to build the doc and install it.
@@ -30,14 +37,11 @@ class custom_build_py(build_py):
                 package_version,
             )
         except ImportError as e:
-            print(e)
+            print("The documentation is not being built as the "
+                  "mpi_cmake_modules is not found", file=sys.stderr)
 
         # distutils uses old-style classes, so no super()
         build_py.run(self)
-
-def print_error(*args, **kwargs):
-    """ Print in stderr. """
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def find_resources(package_name):
@@ -59,11 +63,6 @@ def find_resources(package_name):
     return resources
 
 
-# provide old names for compatiblity
-package_name = "bullet_utils"
-package_names = [package_name, "pinocchio_bullet", "py_pinocchio_bullet"]
-package_version = "1.0.0"
-
 with open(path.join(path.dirname(path.realpath(__file__)), "readme.md"), "r") as fh:
     long_description = fh.read()
 
@@ -76,14 +75,19 @@ for (root, _, files) in walk(path.join("demos")):
     for demo_file in files:
         scripts_list.append(path.join(root, demo_file))
 
+# Setup the package
 setup(
     name=package_name,
     version="1.0.0",
-    package_dir={name: path.join("src", name) for name in package_names},
-    packages=package_names,
+    package_dir={'': 'src',},
+    packages=find_packages(where='src'),
     package_data={package_name: resources},
     scripts=scripts_list,
-    install_requires=["setuptools", "pybullet", "pinocchio", "importlib_resources"],
+    # required dependencies.
+    install_requires=["setuptools", "pybullet", "importlib_resources"],
+    # optional (hack) dependencies.
+    tests_require=["pytest", "mpi_cmake_modules"],
+    #
     zip_safe=True,
     maintainer="mnaveau",
     maintainer_email="mnaveau@tuebingen.mpg.de",
@@ -92,7 +96,6 @@ setup(
     url="https://github.com/pypa/sampleproject",
     description="Wrapper around the pybullet interface using pinocchio.",
     license="BSD-3-clause",
-    tests_require=["pytest"],
     entry_points={
         "console_scripts": [],
     },

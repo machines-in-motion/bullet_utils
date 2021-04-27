@@ -7,7 +7,13 @@ The code provided in this repo simplifies the interaction between pinocchio and 
 
 #### Standard dependencies
 
-You need [PyBullet](https://github.com/bulletphysics/bullet3) and [Pinocchio](https://github.com/stack-of-tasks/pinocchio) to install this package. To run the demo, you need to install [robot_properties_solo](https://github.com/open-dynamic-robot-initiative/robot_properties_solo) as well.
+You need [PyBullet](https://github.com/bulletphysics/bullet3) and
+[Pinocchio](https://github.com/stack-of-tasks/pinocchio) to install this
+package.
+
+To run the demo, you need to install
+[robot_properties_solo](https://github.com/open-dynamic-robot-initiative/robot_properties_solo)
+as well.
 
 #### Download the package
 
