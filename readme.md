@@ -60,6 +60,24 @@ cd mkdir -p ~/devel/workspace/src/bullet_utils/demos
 python3 demo_simulate_a_robot.py
 ```
 
+#### API documentation
+
+The API documentation is automatically generated using colcon.
+For the build to work one need to add the
+[mpi_cmake_modules](https://github.com/machines-in-motion/mpi_cmake_modules)
+to their workspace using git or treep.
+
+```
+cd ~/devel/workspace/src
+git clone git@github.com:machines-in-motion/mpi_cmake_modules.git
+```
+or
+```
+treep --clone mpi_cmake_modules
+```
+
+TODO: *Where to find the last built doc on the internet.*
+
 ### License and Copyrights
 
 License BSD-3-Clause
