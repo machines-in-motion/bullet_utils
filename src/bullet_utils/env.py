@@ -20,7 +20,20 @@ from pinocchio.utils import zero
 
 
 class BulletEnv(object):
+    """This class manages a PyBullet simulation environment and provides utility functions to interact with :py:obj:`PinBulletWrapper` objects.
+
+    Attributes:
+        dt (float): The length of the simulation integration step.
+        objects (list): The list of the PyBullet ids for all the non-robot objects.
+        robots (list): The list of the robot wrapper of all added robots.
+    """    
     def __init__(self, server=pybullet.GUI, dt=0.001):
+        """Initializes the PyBullet client.
+
+        Args:
+            server (int, optional): PyBullet server mode. pybullet.GUI creates a graphical frontend using OpenGL while pybullet.DIRECT does not. Defaults to pybullet.GUI.
+            dt (float, optional): The length of the simulation integration step.. Defaults to 0.001.
+        """        
         self.dt = dt
         self.objects = []
         self.robots = []
@@ -40,6 +53,17 @@ class BulletEnv(object):
     def add_object_from_urdf(
         self, urdf_path, pos=[0, 0, 0], orn=[0, 0, 0, 1], useFixedBase=True
     ):
+        """Adds an object described by a URDF file.
+
+        Args:
+            urdf_path (str): The absolute path of the URDF file
+            pos (list, optional): The initial position of the object in the world frame. Defaults to [0, 0, 0].
+            orn (list, optional): The initial orientation of the object in the world frame, expressed in quaternions. Defaults to [0, 0, 0, 1].
+            useFixedBase (bool, optional): Determines if the robot base is fixed or not. Defaults to True.
+
+        Returns:
+            [int]: The PyBullet id of the object if added successfully.
+        """    
         # Load the object.
         object_id = pybullet.loadURDF(urdf_path, useFixedBase=useFixedBase)
         pybullet.resetBasePositionAndOrientation(object_id, pos, orn)
@@ -47,18 +71,30 @@ class BulletEnv(object):
         return object_id
 
     def start_video_recording(self, file_name):
+        """Starts video recording and save as a mp4 file.
+
+        Args:
+            file_name (str): The absolute path of the file to be saved.
+        """        
         self.file_name = file_name
         pybullet.startStateLogging(
             pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name
         )
 
     def stop_video_recording(self):
+        """Stops video recording if any.
+        """        
         if hasattr(self, "file_name"):
             pybullet.stopStateLogging(
                 pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name
             )
 
     def step(self, sleep=True):
+        """Integrates the simulation one step forward.
+
+        Args:
+            sleep (bool, optional): Determines if the simulation sleeps for :py:attr:`~dt` seconds at each step. Defaults to True.
+        """        
         if sleep:
             time.sleep(self.dt)
         pybullet.stepSimulation()
@@ -67,6 +103,8 @@ class BulletEnv(object):
             robot.compute_numerical_quantities(self.dt)
 
     def print_physics_engine_params(self):
+        """Prints the parametes of the physics engine.
+        """        
         params = pybullet.getPhysicsEngineParameters(self.physicsClient)
         print("physics_engine_params:")
         for key in params:
@@ -74,7 +112,10 @@ class BulletEnv(object):
 
 
 class BulletEnvWithGround(BulletEnv):
-    def __init__(self, server=pybullet.GUI, dt=0.001):
+    """This class provides a shortcut to construct a PyBullet simulation environment with a flat ground.
+    parent:
+    """    
+    def __init__(self, server=pybullet.GUI, dt=0.001):     
         super().__init__(server, dt)
         with importlib_resources.path(__package__, "env.py") as p:
             package_dir = p.parent.absolute()
