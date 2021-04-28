@@ -13,10 +13,8 @@ try:
 except ImportError:
     import importlib_resources
 import pybullet
-import pinocchio
-import numpy as np
 import time
-from pinocchio.utils import zero
+import inspect
 
 
 class BulletEnv(object):
@@ -42,11 +40,7 @@ class BulletEnv(object):
         pybullet.setGravity(0, 0, -9.81)
         pybullet.setPhysicsEngineParameter(fixedTimeStep=dt, numSubSteps=1)
 
-    def add_robot(self, RobotWrapper, pos=None, orn=None, useFixedBase=False):
-        try:
-            robot = RobotWrapper(pos, orn, useFixedBase)
-        except:
-            robot = RobotWrapper(pos, orn)
+    def add_robot(self, robot):
         self.robots.append(robot)
         return robot
 
