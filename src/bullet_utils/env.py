@@ -83,7 +83,7 @@ class BulletEnv(object):
                 pybullet.STATE_LOGGING_VIDEO_MP4, self.file_name
             )
 
-    def step(self, sleep=True):
+    def step(self, sleep=False):
         """Integrates the simulation one step forward.
 
         Args:
