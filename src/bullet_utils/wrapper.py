@@ -64,7 +64,7 @@ class PinBulletWrapper(object):
         # IMU pose offset in base frame
         self.rot_base_to_imu = np.identity(3)
         self.r_base_to_imu = np.array([0.10407, -0.00635, 0.01540])
-        
+
         self.rng = default_rng()
 
         self.base_imu_accel_bias = np.zeros(3)
@@ -215,7 +215,8 @@ class PinBulletWrapper(object):
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
         
         # Transform the base acceleration to the IMU position, in world frame
-        imu_linacc = self.base_linacc + np.cross(self.base_angacc, self.r_base_to_imu) + np.cross(base_angvel, np.cross(base_angvel, self.r_base_to_imu))
+        imu_linacc = self.base_linacc + np.cross(self.base_angacc, rot_base_to_world @ self.r_base_to_imu) +\
+                     np.cross(base_angvel, np.cross(base_angvel, rot_base_to_world @ self.r_base_to_imu))
 
         return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(imu_linacc + np.array([0.0, 0.0, 9.81]))) + self.base_imu_accel_bias + self.base_imu_accel_thermal
         
@@ -262,6 +263,28 @@ class PinBulletWrapper(object):
                 dq[self.pinocchio_joint_ids[i] - 1] = joint_states[i][1]
 
         return q, dq
+
+    def get_imu_frame_position_velocity(self):
+        """Returns the position and velocity of IMU frame. Note that the velocity is expressed in the IMU frame.
+
+        Returns:
+            np.array((3,1)): IMU frame position expressed in world.
+            np.array((3,1)): IMU frame velocity expressed in IMU frame.
+        """ 
+        q, dq = self.get_state()
+        
+        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+        # Get transform between inertial frame and link frame in base
+        base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
+        base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
+        base_pos, base_quat = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
+        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
+
+        base_angvel = dq[3:6]
+
+        imu_position = q[:3] + rot_base_to_world @ self.r_base_to_imu
+        imu_velocity = self.rot_base_to_imu @ (dq[:3] + np.cross(base_angvel, self.r_base_to_imu))
+        return imu_position, imu_velocity
 
     def update_pinocchio(self, q, dq):
         """Updates the pinocchio robot.
