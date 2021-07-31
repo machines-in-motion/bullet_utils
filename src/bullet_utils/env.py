@@ -87,7 +87,7 @@ class BulletEnv(object):
         """Integrates the simulation one step forward.
 
         Args:
-            sleep (bool, optional): Determines if the simulation sleeps for :py:attr:`~dt` seconds at each step. Defaults to True.
+            sleep (bool, optional): Determines if the simulation sleeps for :py:attr:`~dt` seconds at each step. Defaults to False.
         """        
         if sleep:
             time.sleep(self.dt)
