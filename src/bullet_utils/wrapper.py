@@ -71,10 +71,10 @@ class PinBulletWrapper(object):
         self.base_imu_gyro_bias = np.zeros(3)
         self.base_imu_accel_thermal = np.zeros(3)
         self.base_imu_gyro_thermal = np.zeros(3)
-        self.base_imu_accel_thermal_noise = 0.00078 # m/s^2/sqrt(Hz)
-        self.base_imu_gyro_thermal_noise = 0.000523 # rad/s/sqrt(Hz) 
-        self.base_imu_accel_bias_noise = 0.0001 # m/s^3/sqrt(Hz)
-        self.base_imu_gyro_bias_noise = 0.000618 # rad/s^2/sqrt(Hz)
+        self.base_imu_accel_thermal_noise = 0.0001962 # m/(s^2*sqrt(Hz))
+        self.base_imu_gyro_thermal_noise = 0.0000873  # rad/(s*qrt(Hz))
+        self.base_imu_accel_bias_noise = 0.0001       # m/(s^3*sqrt(Hz))
+        self.base_imu_gyro_bias_noise = 0.000309      # rad/(s^2*sqrt(Hz))
         
         bullet_joint_map = {}
         for ji in range(pybullet.getNumJoints(robot_id)):
@@ -187,15 +187,9 @@ class PinBulletWrapper(object):
             np.array((3,1)) IMU gyroscope angular velocity (base frame)
         """
         base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
-
-        # Get transform between inertial frame and link frame in base
-        base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
-        base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
-        base_pos, base_quat = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
-
+        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_inertia_quat)).reshape((3, 3))
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
-        
-        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
+
         return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(np.array(base_angvel))) + self.base_imu_gyro_bias + self.base_imu_gyro_thermal
         
     def get_base_imu_linacc(self):
@@ -205,13 +199,7 @@ class PinBulletWrapper(object):
             np.array((3,1)) IMU accelerometer acceleration (base frame, gravity offset)
         """
         base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
-
-        # Get transform between inertial frame and link frame in base
-        base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
-        base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
-        base_pos, base_quat = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
-        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
-
+        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_inertia_quat)).reshape((3, 3))
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
         
         # Transform the base acceleration to the IMU position, in world frame
@@ -390,12 +378,12 @@ class PinBulletWrapper(object):
         self.base_angvel_prev = np.array(angvel)
 
         # Integrate IMU accelerometer/gyroscope bias terms forward.
-        self.base_imu_accel_bias += dt * (self.base_imu_accel_bias_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
-        self.base_imu_gyro_bias += dt * (self.base_imu_gyro_bias_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
+        self.base_imu_accel_bias += dt * (self.base_imu_accel_bias_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
+        self.base_imu_gyro_bias += dt * (self.base_imu_gyro_bias_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
 
         # Add simulated IMU sensor thermal noise.
-        self.base_imu_accel_thermal = (self.base_imu_accel_thermal_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
-        self.base_imu_gyro_thermal = (self.base_imu_gyro_thermal_noise / np.sqrt(1.0 / dt)) * self.rng.standard_normal(3)
+        self.base_imu_accel_thermal = (self.base_imu_accel_thermal_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
+        self.base_imu_gyro_thermal = (self.base_imu_gyro_thermal_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
         
     def print_physics_params(self):
         """Print physics engine parameters.
