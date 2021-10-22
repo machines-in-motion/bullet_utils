@@ -71,10 +71,10 @@ class PinBulletWrapper(object):
         self.base_imu_gyro_bias = np.zeros(3)
         self.base_imu_accel_thermal = np.zeros(3)
         self.base_imu_gyro_thermal = np.zeros(3)
-        self.base_imu_accel_thermal_noise = 0.0001962 # m/(s^2*sqrt(Hz))
-        self.base_imu_gyro_thermal_noise = 0.0000873  # rad/(s*qrt(Hz))
-        self.base_imu_accel_bias_noise = 0.0001       # m/(s^3*sqrt(Hz))
-        self.base_imu_gyro_bias_noise = 0.000309      # rad/(s^2*sqrt(Hz))
+        self.base_imu_accel_thermal_noise = 0.0001962 # m/(sec^2*sqrt(Hz))
+        self.base_imu_gyro_thermal_noise = 0.0000873  # rad/(sec*sqrt(Hz))
+        self.base_imu_accel_bias_noise = 0.0001       # m/(sec^3*sqrt(Hz))
+        self.base_imu_gyro_bias_noise = 0.000309      # rad/(sec^2*sqrt(Hz))
         
         bullet_joint_map = {}
         for ji in range(pybullet.getNumJoints(robot_id)):
