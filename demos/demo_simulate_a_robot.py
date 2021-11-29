@@ -44,7 +44,9 @@ if __name__ == "__main__":
         #  q, dq = robot.get_state_update_pinocchio()
 
         if i % 100 == 0:
-            print("Forces:", active_contact_frames, contact_forces)
+            print("Contact status :\n", active_contact_frames)
+            print("Corresponding forces :\n", contact_forces)
+            # print("Forces:", active_contact_frames, contact_forces)
 
         # Compute the command torques at the joints. The torque
         # vector only takes the actuated joints (excluding the base)

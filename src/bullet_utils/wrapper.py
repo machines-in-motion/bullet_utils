@@ -133,6 +133,8 @@ class PinBulletWrapper(object):
         active_contacts_frame_ids = []
         contact_forces = []
 
+        self.contact_status.fill(0.)
+        self.contact_forces.fill(0.)
 
         # Get the contact model using the pybullet.getContactPoints() api.
         cp = pybullet.getContactPoints(self.robot_id)
@@ -154,19 +156,19 @@ class PinBulletWrapper(object):
 
             if self.pinocchio_endeff_ids[i] in active_contacts_frame_ids:
                 continue
-
-            active_contacts_frame_ids.append(self.pinocchio_endeff_ids[i])
-            force = np.zeros(6)
-
-            force[:3] = (
-                normal_force * np.array(contact_normal)
-                + lateral_friction_force_1 * np.array(lateral_friction_direction_1)
+            
+            self.contact_status[i] = 1 
+            self.contact_forces[i,:3] = normal_force * np.array(contact_normal) \
+                + lateral_friction_force_1 * np.array(lateral_friction_direction_1) \
                 + lateral_friction_force_2 * np.array(lateral_friction_direction_2)
-            )
-
-            contact_forces.append(force)
-
-        return active_contacts_frame_ids[::-1], contact_forces[::-1]
+        
+            # there are instances when status is True but force is zero, to fix this, 
+            # we need the below if statement
+            if np.linalg.norm(self.contact_forces[i,:3]) < 1.e-12: 
+                self.contact_status[i] = 0
+                self.contact_forces[i,:3].fill(0.)
+                
+        return self.contact_status, self.contact_forces
 
     def get_base_velocity_world(self):
         """Returns the velocity of the base in the world frame.
