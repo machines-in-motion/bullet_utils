@@ -61,5 +61,5 @@ if __name__ == "__main__":
     # Print the final active force frames and the forces
     force_frames, forces = robot.get_force()
 
-    print("Active force_frames:", force_frames)
-    print("Corresponding forces:", forces)
+    print("Active force_frames:\n", force_frames)
+    print("Corresponding forces:\n", forces)

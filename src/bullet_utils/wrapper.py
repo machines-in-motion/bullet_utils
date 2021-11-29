@@ -129,13 +129,8 @@ class PinBulletWrapper(object):
             (:obj:`list` of :obj:`int`): List of active contact frame ids.
             (:obj:`list` of np.array((6,1))) List of active contact forces.
         """        
-        
-        active_contacts_frame_ids = []
-        contact_forces = []
-
         self.contact_status.fill(0.)
         self.contact_forces.fill(0.)
-
         # Get the contact model using the pybullet.getContactPoints() api.
         cp = pybullet.getContactPoints(self.robot_id)
 
@@ -149,14 +144,9 @@ class PinBulletWrapper(object):
 
             if ci[3] in self.bullet_endeff_ids:
                 i = np.where(np.array(self.bullet_endeff_ids) == ci[3])[0][0]
-            elif ci[4] in self.bullet_endeff_ids:
-                i = np.where(np.array(self.bullet_endeff_ids) == ci[4])[0][0]
             else:
-                continue
-
-            if self.pinocchio_endeff_ids[i] in active_contacts_frame_ids:
-                continue
-            
+                continue 
+             
             self.contact_status[i] = 1 
             self.contact_forces[i,:3] = normal_force * np.array(contact_normal) \
                 + lateral_friction_force_1 * np.array(lateral_friction_direction_1) \
