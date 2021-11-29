@@ -24,7 +24,8 @@ from robot_properties_solo.solo8wrapper import Solo8Robot
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
     env = BulletEnvWithGround(pybullet.GUI)
-    robot = env.add_robot(Solo8Robot)
+    robot = Solo8Robot()
+    env.add_robot(robot)
     q, dq = robot.get_state()
 
     # Update the simulation state to the new initial configuration.
