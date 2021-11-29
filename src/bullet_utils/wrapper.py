@@ -117,6 +117,10 @@ class PinBulletWrapper(object):
         self.pinocchio_endeff_ids = [
             pinocchio_robot.model.getFrameId(name) for name in endeff_names
         ]
+        # 
+        self.nb_contacts = len(self.pinocchio_endeff_ids)
+        self.contact_status = np.zeros(self.nb_contacts)
+        self.contact_forces = np.zeros([self.nb_contacts, 6])
 
     def get_force(self):
         """Returns the force readings as well as the set of active contacts
@@ -129,8 +133,9 @@ class PinBulletWrapper(object):
         active_contacts_frame_ids = []
         contact_forces = []
 
+
         # Get the contact model using the pybullet.getContactPoints() api.
-        cp = pybullet.getContactPoints()
+        cp = pybullet.getContactPoints(self.robot_id)
 
         for ci in reversed(cp):
             contact_normal = ci[7]
