@@ -117,10 +117,13 @@ class PinBulletWrapper(object):
         self.pinocchio_endeff_ids = [
             pinocchio_robot.model.getFrameId(name) for name in endeff_names
         ]
+        # 
+        self.nb_contacts = len(self.pinocchio_endeff_ids)
+        self.contact_status = np.zeros(self.nb_contacts)
+        self.contact_forces = np.zeros([self.nb_contacts, 6])
 
     def get_force(self):
         """Returns the force readings as well as the set of active contacts
-
         Returns:
             (:obj:`list` of :obj:`int`): List of active contact frame ids.
             (:obj:`list` of np.array((6,1))) List of active contact forces.
@@ -162,6 +165,44 @@ class PinBulletWrapper(object):
             contact_forces.append(force)
 
         return active_contacts_frame_ids[::-1], contact_forces[::-1]
+
+    def end_effector_forces(self):
+        """Returns the forces and status for all end effectors 
+
+        Returns:
+            (:obj:`list` of :obj:`int`): list of contact status for each end effector. 
+            (:obj:`list` of np.array(6)): List of force wrench at each end effector 
+        """        
+        contact_status = np.zeros(len(self.pinocchio_endeff_ids))
+        contact_forces = np.zeros([len(self.pinocchio_endeff_ids), 6])
+        # Get the contact model using the pybullet.getContactPoints() api.
+        cp = pybullet.getContactPoints(self.robot_id)
+
+        for ci in reversed(cp):
+            contact_normal = ci[7]
+            normal_force = ci[9]
+            lateral_friction_direction_1 = ci[11]
+            lateral_friction_force_1 = ci[10]
+            lateral_friction_direction_2 = ci[13]
+            lateral_friction_force_2 = ci[12]
+            
+            if ci[3] in self.bullet_endeff_ids:
+                i = np.where(np.array(self.bullet_endeff_ids) == ci[3])[0][0]
+            else:
+                continue 
+            
+            contact_status[i] = 1 
+            contact_forces[i,:3] = normal_force * np.array(contact_normal) \
+                + lateral_friction_force_1 * np.array(lateral_friction_direction_1) \
+                + lateral_friction_force_2 * np.array(lateral_friction_direction_2)
+            # there are instances when status is True but force is zero, to fix this, 
+            # we need the below if statement
+            if np.linalg.norm(contact_forces[i,:3]) < 1.e-12: 
+                contact_status[i] = 0
+                contact_forces[i,:3].fill(0.)
+                
+        return contact_status, contact_forces
+
 
     def get_base_velocity_world(self):
         """Returns the velocity of the base in the world frame.

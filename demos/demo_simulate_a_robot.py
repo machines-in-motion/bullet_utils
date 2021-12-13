@@ -24,7 +24,8 @@ from robot_properties_solo.solo8wrapper import Solo8Robot
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
     env = BulletEnvWithGround(pybullet.GUI)
-    robot = env.add_robot(Solo8Robot)
+    robot = Solo8Robot()
+    env.add_robot(robot)
     q, dq = robot.get_state()
 
     # Update the simulation state to the new initial configuration.
@@ -43,7 +44,9 @@ if __name__ == "__main__":
         #  q, dq = robot.get_state_update_pinocchio()
 
         if i % 100 == 0:
-            print("Forces:", active_contact_frames, contact_forces)
+            print("Contact status :\n", active_contact_frames)
+            print("Corresponding forces :\n", contact_forces)
+            # print("Forces:", active_contact_frames, contact_forces)
 
         # Compute the command torques at the joints. The torque
         # vector only takes the actuated joints (excluding the base)
@@ -58,5 +61,5 @@ if __name__ == "__main__":
     # Print the final active force frames and the forces
     force_frames, forces = robot.get_force()
 
-    print("Active force_frames:", force_frames)
-    print("Corresponding forces:", forces)
+    print("Active force_frames:\n", force_frames)
+    print("Corresponding forces:\n", forces)
