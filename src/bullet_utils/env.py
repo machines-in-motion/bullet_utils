@@ -14,8 +14,6 @@ except ImportError:
     import importlib_resources
 import pybullet
 import time
-import inspect
-
 
 class BulletEnv(object):
     """This class manages a PyBullet simulation environment and provides utility functions to interact with :py:obj:`PinBulletWrapper` objects.
@@ -117,3 +115,16 @@ class BulletEnvWithGround(BulletEnv):
             package_dir / "resources" / "plane_with_restitution.urdf"
         )
         self.add_object_from_urdf(plane_urdf)
+
+    """Sets friction coefficients of the env. floor
+     Args:
+        lateral (float, optional): The lateral friction coefficient of the env. floor
+        spinning (float, optional): The spinning friction coefficient of the env. floor
+        rolling (float, optional): The rolling friction coefficient of the env. floor
+    """
+    def set_floor_frictions(self, lateral=1.0, spinning=0.0, rolling=0.0):
+        pybullet.changeDynamics(
+            self.objects[0], 0, lateralFriction=lateral,
+            spinningFriction=spinning, rollingFriction=rolling
+        )    
+
