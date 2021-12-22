@@ -122,7 +122,7 @@ class BulletEnvWithGround(BulletEnv):
         spinning (float, optional): The spinning friction coefficient of the env. floor
         rolling (float, optional): The rolling friction coefficient of the env. floor
     """
-    def set_floor_frictions(self, lateral=1.0, spinning=-1.0, rolling=-1.0):
+    def set_floor_frictions(self, lateral=1.0, spinning=0.0, rolling=0.0):
         pybullet.changeDynamics(
             self.objects[0], -1, lateralFriction=lateral,
             spinningFriction=spinning, rollingFriction=rolling
