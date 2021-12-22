@@ -124,7 +124,7 @@ class BulletEnvWithGround(BulletEnv):
     """
     def set_floor_frictions(self, lateral=1.0, spinning=0.0, rolling=0.0):
         pybullet.changeDynamics(
-            self.objects[0], -1, lateralFriction=lateral,
+            self.objects[0], 0, lateralFriction=lateral,
             spinningFriction=spinning, rollingFriction=rolling
         )    
 
