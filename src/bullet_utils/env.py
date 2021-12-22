@@ -116,6 +116,12 @@ class BulletEnvWithGround(BulletEnv):
         )
         self.add_object_from_urdf(plane_urdf)
 
+    """Sets friction coefficients of the env. floor
+     Args:
+        lateral (float, optional): The lateral friction coefficient of the env. floor
+        spinning (float, optional): The spinning friction coefficient of the env. floor
+        rolling (float, optional): The rolling friction coefficient of the env. floor
+    """
     def set_floor_frictions(self, lateral=1.0, spinning=-1.0, rolling=-1.0):
         pybullet.changeDynamics(
             self.objects[0], -1, lateralFriction=lateral,
