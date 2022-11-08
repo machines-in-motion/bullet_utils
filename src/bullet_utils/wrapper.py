@@ -166,7 +166,7 @@ class PinBulletWrapper(object):
 
         return active_contacts_frame_ids[::-1], contact_forces[::-1]
 
-    def end_effector_forces(self):
+    def end_effector_forces(self, pinRefFrame=pinocchio.LOCAL):
         """Returns the forces and status for all end effectors 
 
         Returns:
@@ -175,32 +175,51 @@ class PinBulletWrapper(object):
         """        
         contact_status = np.zeros(len(self.pinocchio_endeff_ids))
         contact_forces = np.zeros([len(self.pinocchio_endeff_ids), 6])
+        contact_wrenches = [pinocchio.Force.Zero() for i in range(len(self.pinocchio_endeff_ids))]
         # Get the contact model using the pybullet.getContactPoints() api.
         cp = pybullet.getContactPoints(self.robot_id)
 
         for ci in reversed(cp):
+            p_ct = np.array(ci[6])
             contact_normal = ci[7]
             normal_force = ci[9]
             lateral_friction_direction_1 = ci[11]
             lateral_friction_force_1 = ci[10]
             lateral_friction_direction_2 = ci[13]
             lateral_friction_force_2 = ci[12]
-            
+            # Find id
             if ci[3] in self.bullet_endeff_ids:
                 i = np.where(np.array(self.bullet_endeff_ids) == ci[3])[0][0]
             else:
                 continue 
-            
+            # Contact active
             contact_status[i] = 1 
-            contact_forces[i,:3] = normal_force * np.array(contact_normal) \
+            # Compute linear force at contact point in WORLD frame 
+            lin_force_world = normal_force * np.array(contact_normal) \
                 + lateral_friction_force_1 * np.array(lateral_friction_direction_1) \
                 + lateral_friction_force_2 * np.array(lateral_friction_direction_2)
-            # there are instances when status is True but force is zero, to fix this, 
-            # we need the below if statement
-            if np.linalg.norm(contact_forces[i,:3]) < 1.e-12: 
+            # Compute LOCAL wrench at contact point 
+            oMf = self.pinocchio_robot.data.oMf[self.pinocchio_endeff_ids[i]]
+            lin_force_local = oMf.rotation.T @ lin_force_world
+            ang_force_local = np.cross(oMf.rotation.T @ (p_ct - oMf.translation), lin_force_local)
+            wrench_local = np.concatenate([lin_force_local, ang_force_local]) 
+            # Discard wrench if too small
+            if np.linalg.norm(wrench_local) < 1.e-12: 
+                wrench_local.fill(0.)
+            contact_forces[i,:] += wrench_local
+        
+        for i in range(contact_forces.shape[0]):
+            # Deactivate contact if total wrench is too small
+            if np.linalg.norm(contact_forces[i,:]) < 1.e-12: 
                 contact_status[i] = 0
-                contact_forces[i,:3].fill(0.)
-                
+            # if LOCAL, nothing to do 
+            if(pinRefFrame==pinocchio.LOCAL):
+                continue
+            else:
+                lwaMf = self.pinocchio_robot.data.oMf[self.pinocchio_endeff_ids[i]].copy()
+                lwaMf.translation = np.zeros(3)
+                tmp = pinocchio.Force(contact_forces[i,:])
+                contact_forces[i,:] = -lwaMf.act(tmp).vector
         return contact_status, contact_forces
 
 
