@@ -18,6 +18,7 @@ class custom_build_py(build_py):
         build_py (class): inherit from the build_py class which builds the current
                      python package.
     """
+
     def run(self):
 
         # Try to build the doc and install it.
@@ -28,24 +29,23 @@ class custom_build_py(build_py):
             )
 
             build_documentation(
-                str(
-                    (
-                        Path(self.build_lib) / package_name / "doc"
-                    ).absolute()
-                ),
+                str((Path(self.build_lib) / package_name / "doc").absolute()),
                 str(Path(__file__).parent.absolute()),
                 package_version,
             )
         except ImportError as e:
-            print("The documentation is not being built as the "
-                  "mpi_cmake_modules is not found", file=sys.stderr)
+            print(
+                "The documentation is not being built as the "
+                "mpi_cmake_modules is not found",
+                file=sys.stderr,
+            )
 
         # distutils uses old-style classes, so no super()
         build_py.run(self)
 
 
 def find_resources(package_name):
-    """ Find the relative path of files under the resource folder. """
+    """Find the relative path of files under the resource folder."""
     resources = []
     package_dir = path.join("src", package_name)
     resources_dir = path.join(package_dir, "resources")
@@ -79,8 +79,10 @@ for (root, _, files) in walk(path.join("demos")):
 setup(
     name=package_name,
     version="1.0.0",
-    package_dir={'': 'src',},
-    packages=find_packages(where='src'),
+    package_dir={
+        "": "src",
+    },
+    packages=find_packages(where="src"),
     package_data={package_name: resources},
     scripts=scripts_list,
     # required dependencies.
