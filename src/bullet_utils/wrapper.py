@@ -30,7 +30,7 @@ class PinBulletWrapper(object):
         nb_dof (int): The degrees of freedom excluding the base.
         joint_names (:obj:`list` of :obj:`str`): Names of the joints.
         endeff_names (:obj:`list` of :obj:`str`): Names of the end-effectors.
-    """    
+    """
 
     def __init__(
         self, robot_id, pinocchio_robot, joint_names, endeff_names, useFixedBase=False
@@ -43,7 +43,7 @@ class PinBulletWrapper(object):
             joint_names (:obj:`list` of :obj:`str`): Names of the joints.
             endeff_names (:obj:`list` of :obj:`str`): Names of the end-effectors.
             useFixedBase (bool, optional): Determines if the robot base if fixed.. Defaults to False.
-        """    
+        """
         self.nq = pinocchio_robot.nq
         self.nv = pinocchio_robot.nv
         self.nj = len(joint_names)
@@ -71,11 +71,11 @@ class PinBulletWrapper(object):
         self.base_imu_gyro_bias = np.zeros(3)
         self.base_imu_accel_thermal = np.zeros(3)
         self.base_imu_gyro_thermal = np.zeros(3)
-        self.base_imu_accel_thermal_noise = 0.0001962 # m/(sec^2*sqrt(Hz))
+        self.base_imu_accel_thermal_noise = 0.0001962  # m/(sec^2*sqrt(Hz))
         self.base_imu_gyro_thermal_noise = 0.0000873  # rad/(sec*sqrt(Hz))
-        self.base_imu_accel_bias_noise = 0.0001       # m/(sec^3*sqrt(Hz))
-        self.base_imu_gyro_bias_noise = 0.000309      # rad/(sec^2*sqrt(Hz))
-        
+        self.base_imu_accel_bias_noise = 0.0001  # m/(sec^3*sqrt(Hz))
+        self.base_imu_gyro_bias_noise = 0.000309  # rad/(sec^2*sqrt(Hz))
+
         bullet_joint_map = {}
         for ji in range(pybullet.getNumJoints(robot_id)):
             bullet_joint_map[
@@ -117,7 +117,7 @@ class PinBulletWrapper(object):
         self.pinocchio_endeff_ids = [
             pinocchio_robot.model.getFrameId(name) for name in endeff_names
         ]
-        # 
+        #
         self.nb_contacts = len(self.pinocchio_endeff_ids)
         self.contact_status = np.zeros(self.nb_contacts)
         self.contact_forces = np.zeros([self.nb_contacts, 6])
@@ -127,8 +127,8 @@ class PinBulletWrapper(object):
         Returns:
             (:obj:`list` of :obj:`int`): List of active contact frame ids.
             (:obj:`list` of np.array((6,1))) List of active contact forces.
-        """        
-        
+        """
+
         active_contacts_frame_ids = []
         contact_forces = []
 
@@ -167,12 +167,12 @@ class PinBulletWrapper(object):
         return active_contacts_frame_ids[::-1], contact_forces[::-1]
 
     def end_effector_forces(self):
-        """Returns the forces and status for all end effectors 
+        """Returns the forces and status for all end effectors
 
         Returns:
-            (:obj:`list` of :obj:`int`): list of contact status for each end effector. 
-            (:obj:`list` of np.array(6)): List of force wrench at each end effector 
-        """        
+            (:obj:`list` of :obj:`int`): list of contact status for each end effector.
+            (:obj:`list` of np.array(6)): List of force wrench at each end effector
+        """
         contact_status = np.zeros(len(self.pinocchio_endeff_ids))
         contact_forces = np.zeros([len(self.pinocchio_endeff_ids), 6])
         # Get the contact model using the pybullet.getContactPoints() api.
@@ -185,24 +185,25 @@ class PinBulletWrapper(object):
             lateral_friction_force_1 = ci[10]
             lateral_friction_direction_2 = ci[13]
             lateral_friction_force_2 = ci[12]
-            
+
             if ci[3] in self.bullet_endeff_ids:
                 i = np.where(np.array(self.bullet_endeff_ids) == ci[3])[0][0]
             else:
-                continue 
-            
-            contact_status[i] = 1 
-            contact_forces[i,:3] = normal_force * np.array(contact_normal) \
-                + lateral_friction_force_1 * np.array(lateral_friction_direction_1) \
-                + lateral_friction_force_2 * np.array(lateral_friction_direction_2)
-            # there are instances when status is True but force is zero, to fix this, 
-            # we need the below if statement
-            if np.linalg.norm(contact_forces[i,:3]) < 1.e-12: 
-                contact_status[i] = 0
-                contact_forces[i,:3].fill(0.)
-                
-        return contact_status, contact_forces
+                continue
 
+            contact_status[i] = 1
+            contact_forces[i, :3] = (
+                normal_force * np.array(contact_normal)
+                + lateral_friction_force_1 * np.array(lateral_friction_direction_1)
+                + lateral_friction_force_2 * np.array(lateral_friction_direction_2)
+            )
+            # there are instances when status is True but force is zero, to fix this,
+            # we need the below if statement
+            if np.linalg.norm(contact_forces[i, :3]) < 1.0e-12:
+                contact_status[i] = 0
+                contact_forces[i, :3].fill(0.0)
+
+        return contact_status, contact_forces
 
     def get_base_velocity_world(self):
         """Returns the velocity of the base in the world frame.
@@ -222,50 +223,84 @@ class PinBulletWrapper(object):
         return np.concatenate((self.base_linacc, self.base_angacc))
 
     def get_base_imu_angvel(self):
-        """ Returns simulated base IMU gyroscope angular velocity.
+        """Returns simulated base IMU gyroscope angular velocity.
 
         Returns:
             np.array((3,1)) IMU gyroscope angular velocity (base frame)
         """
-        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
-        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_inertia_quat)).reshape((3, 3))
+        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(
+            self.robot_id
+        )
+        rot_base_to_world = np.array(
+            pybullet.getMatrixFromQuaternion(base_inertia_quat)
+        ).reshape((3, 3))
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
 
-        return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(np.array(base_angvel))) + self.base_imu_gyro_bias + self.base_imu_gyro_thermal
-        
+        return (
+            self.rot_base_to_imu.dot(rot_base_to_world.T.dot(np.array(base_angvel)))
+            + self.base_imu_gyro_bias
+            + self.base_imu_gyro_thermal
+        )
+
     def get_base_imu_linacc(self):
-        """ Returns simulated base IMU accelerometer acceleration.
+        """Returns simulated base IMU accelerometer acceleration.
 
         Returns:
             np.array((3,1)) IMU accelerometer acceleration (base frame, gravity offset)
         """
-        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
-        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_inertia_quat)).reshape((3, 3))
+        base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(
+            self.robot_id
+        )
+        rot_base_to_world = np.array(
+            pybullet.getMatrixFromQuaternion(base_inertia_quat)
+        ).reshape((3, 3))
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
-        
-        # Transform the base acceleration to the IMU position, in world frame
-        imu_linacc = self.base_linacc + np.cross(self.base_angacc, rot_base_to_world @ self.r_base_to_imu) +\
-                     np.cross(base_angvel, np.cross(base_angvel, rot_base_to_world @ self.r_base_to_imu))
 
-        return self.rot_base_to_imu.dot(rot_base_to_world.T.dot(imu_linacc + np.array([0.0, 0.0, 9.81]))) + self.base_imu_accel_bias + self.base_imu_accel_thermal
-        
+        # Transform the base acceleration to the IMU position, in world frame
+        imu_linacc = (
+            self.base_linacc
+            + np.cross(self.base_angacc, rot_base_to_world @ self.r_base_to_imu)
+            + np.cross(
+                base_angvel,
+                np.cross(base_angvel, rot_base_to_world @ self.r_base_to_imu),
+            )
+        )
+
+        return (
+            self.rot_base_to_imu.dot(
+                rot_base_to_world.T.dot(imu_linacc + np.array([0.0, 0.0, 9.81]))
+            )
+            + self.base_imu_accel_bias
+            + self.base_imu_accel_thermal
+        )
+
     def get_state(self):
         """Returns a pinocchio-like representation of the q, dq matrices. Note that the base velocities are expressed in the base frame.
 
         Returns:
             ndarray: Generalized positions.
             ndarray: Generalized velocities.
-        """        
-        
+        """
+
         q = zero(self.nq)
         dq = zero(self.nv)
 
         if not self.useFixedBase:
-            base_inertia_pos, base_inertia_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
+            (
+                base_inertia_pos,
+                base_inertia_quat,
+            ) = pybullet.getBasePositionAndOrientation(self.robot_id)
             # Get transform between inertial frame and link frame in base
             base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
-            base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(base_stat[3], base_stat[4])
-            pos, orn = pybullet.multiplyTransforms(base_inertia_pos, base_inertia_quat, base_inertia_link_pos, base_inertia_link_quat)
+            base_inertia_link_pos, base_inertia_link_quat = pybullet.invertTransform(
+                base_stat[3], base_stat[4]
+            )
+            pos, orn = pybullet.multiplyTransforms(
+                base_inertia_pos,
+                base_inertia_quat,
+                base_inertia_link_pos,
+                base_inertia_link_quat,
+            )
 
             q[:3] = pos
             q[3:7] = orn
@@ -303,11 +338,16 @@ class PinBulletWrapper(object):
         base_pose, base_quat = pybullet.getBasePositionAndOrientation(self.robot_id)
         base_linvel, base_angvel = pybullet.getBaseVelocity(self.robot_id)
 
-        rot_base_to_world = np.array(pybullet.getMatrixFromQuaternion(base_quat)).reshape((3, 3))
+        rot_base_to_world = np.array(
+            pybullet.getMatrixFromQuaternion(base_quat)
+        ).reshape((3, 3))
         rot_imu_to_world = rot_base_to_world.dot(self.rot_base_to_imu.T)
 
         imu_position = base_pose + rot_base_to_world.dot(self.r_base_to_imu)
-        imu_velocity = rot_imu_to_world.T.dot(base_linvel + np.cross(base_angvel, rot_base_to_world.dot(self.r_base_to_imu)))
+        imu_velocity = rot_imu_to_world.T.dot(
+            base_linvel
+            + np.cross(base_angvel, rot_base_to_world.dot(self.r_base_to_imu))
+        )
         return imu_position, imu_velocity
 
     def update_pinocchio(self, q, dq):
@@ -342,16 +382,16 @@ class PinBulletWrapper(object):
         Args:
             q (ndarray): Desired generalized positions.
             dq (ndarray): Desired generalized velocities.
-        """        
+        """
         vec2list = lambda m: np.array(m.T).reshape(-1).tolist()
 
         if not self.useFixedBase:
             # Get transform between inertial frame and link frame in base
             base_stat = pybullet.getDynamicsInfo(self.robot_id, -1)
-            base_pos, base_quat = pybullet.multiplyTransforms(vec2list(q[:3]), vec2list(q[3:7]), base_stat[3], base_stat[4])
-            pybullet.resetBasePositionAndOrientation(
-                self.robot_id, base_pos, base_quat
+            base_pos, base_quat = pybullet.multiplyTransforms(
+                vec2list(q[:3]), vec2list(q[3:7]), base_stat[3], base_stat[4]
             )
+            pybullet.resetBasePositionAndOrientation(self.robot_id, base_pos, base_quat)
 
             # Pybullet assumes the base velocity to be aligned with the world frame.
             rot = np.array(pybullet.getMatrixFromQuaternion(q[3:7])).reshape((3, 3))
@@ -380,7 +420,7 @@ class PinBulletWrapper(object):
 
         Args:
             tau (ndarray): Torque to be applied.
-        """        
+        """
         # TODO: Apply the torques on the base towards the simulator as well.
         if not self.useFixedBase:
             assert tau.shape[0] == self.nv - 6
@@ -399,7 +439,7 @@ class PinBulletWrapper(object):
         )
 
     def step_simulation(self):
-        """ Step the simulation forward. """
+        """Step the simulation forward."""
         pybullet.stepSimulation()
 
     def compute_numerical_quantities(self, dt):
@@ -407,28 +447,39 @@ class PinBulletWrapper(object):
 
         Args:
             dt (float): Length of the time step.
-        """        
-        
+        """
+
         # Compute base acceleration numerically
         linvel, angvel = pybullet.getBaseVelocity(self.robot_id)
         if self.base_linvel_prev is not None and self.base_angvel_prev is not None:
             self.base_linacc = (1.0 / dt) * (np.array(linvel) - self.base_linvel_prev)
             self.base_angacc = (1.0 / dt) * (np.array(angvel) - self.base_angvel_prev)
-    
+
         self.base_linvel_prev = np.array(linvel)
         self.base_angvel_prev = np.array(angvel)
 
         # Integrate IMU accelerometer/gyroscope bias terms forward.
-        self.base_imu_accel_bias += dt * (self.base_imu_accel_bias_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
-        self.base_imu_gyro_bias += dt * (self.base_imu_gyro_bias_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
+        self.base_imu_accel_bias += (
+            dt
+            * (self.base_imu_accel_bias_noise / np.sqrt(dt))
+            * self.rng.standard_normal(3)
+        )
+        self.base_imu_gyro_bias += (
+            dt
+            * (self.base_imu_gyro_bias_noise / np.sqrt(dt))
+            * self.rng.standard_normal(3)
+        )
 
         # Add simulated IMU sensor thermal noise.
-        self.base_imu_accel_thermal = (self.base_imu_accel_thermal_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
-        self.base_imu_gyro_thermal = (self.base_imu_gyro_thermal_noise / np.sqrt(dt)) * self.rng.standard_normal(3)
-        
+        self.base_imu_accel_thermal = (
+            self.base_imu_accel_thermal_noise / np.sqrt(dt)
+        ) * self.rng.standard_normal(3)
+        self.base_imu_gyro_thermal = (
+            self.base_imu_gyro_thermal_noise / np.sqrt(dt)
+        ) * self.rng.standard_normal(3)
+
     def print_physics_params(self):
-        """Print physics engine parameters.
-        """        
+        """Print physics engine parameters."""
         # Query all the joints.
         num_joints = pybullet.getNumJoints(self.robot_id)
 
@@ -468,7 +519,7 @@ class PinBulletWrapper(object):
 
         Returns:
             np.array(3, 3): The adjoint of the given translation and rotation.
-        """        
+        """
         res = np.zeros((6, 6))
         res[:3, :3] = rot
         res[3:, 3:] = rot
