@@ -203,8 +203,8 @@ class PinBulletWrapper(object):
             # print("contact normal in WORLD = "+str(contact_normal))
             # print("contact lateral direction 1 in WORLD = "+str(lateral_friction_direction_1))
             # print("contact lateral direction 1 in WORLD = "+str(lateral_friction_direction_2))
+            # print("Total force measured in PyBullet (WORLD) = "+str(contact_forces[i, :3]))
 
-            print("Total force measured in PyBullet (WORLD) = "+str(contact_forces[i, :3]))
             # there are instances when status is True but force is zero, to fix this,
             # we need the below if statement
             if np.linalg.norm(contact_forces[i, :3]) < 1.0e-12:
