@@ -11,4 +11,4 @@ All rights reserved.
 import sys, bullet_utils
 from bullet_utils import *
 
-sys.modules['pinocchio_bullet'] = bullet_utils
+sys.modules["pinocchio_bullet"] = bullet_utils
